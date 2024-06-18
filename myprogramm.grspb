@@ -1,0 +1,11 @@
+funca:
+    push 1
+    push 2
+    add
+    ret
+
+func:
+    push 1
+    push 2
+    call funca
+    ret

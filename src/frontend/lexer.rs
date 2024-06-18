@@ -17,6 +17,7 @@ impl From<std::num::ParseIntError> for LexingError {
 #[logos(skip r"[ \t\n\f]+")] // Ignore this regex pattern between tokens
 #[logos(error = LexingError)]
 pub enum Token {
+    Error,
     #[token("fn")]
     Fn,
     #[token("return")]
