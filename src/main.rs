@@ -54,7 +54,7 @@ fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
         .map(Token::Str);
 
     // A parser for operators
-    let op = one_of("+-*/!=<>")
+    let op = one_of("+-*/!=<>@")
         .repeated()
         .at_least(1)
         .collect::<String>()
@@ -146,6 +146,7 @@ enum BinaryOp {
     NotEq,
     LowerT,
     GreaterT,
+    ListAt,
 }
 
 pub type Spanned<T> = (T, Span);
@@ -298,14 +299,24 @@ fn expr_parser() -> impl Parser<Token, Spanned<Expr>, Error = Simple<Token>> + C
                     let span = a.1.start..b.1.end;
                     (Expr::Binary(Box::new(a), op, Box::new(b)), span)
                 });
+
+            let op = just(Token::Op("@".to_string())).to(BinaryOp::ListAt);
+
+            let listat = order
+                .clone()
+                .then(op.then(order).repeated())
+                .foldl(|a, (op, b)| {
+                    let span = a.1.start..b.1.end;
+                    (Expr::Binary(Box::new(a), op, Box::new(b)), span)
+                });
             // Comparison ops (equal, not-equal) have equal precedence
             let op = just(Token::Op("==".to_string()))
                 .to(BinaryOp::Eq)
                 .or(just(Token::Op("!=".to_string())).to(BinaryOp::NotEq));
 
-            let compare = order
+            let compare = listat
                 .clone()
-                .then(op.then(order).repeated())
+                .then(op.then(listat).repeated())
                 .foldl(|a, (op, b)| {
                     let span = a.1.start..b.1.end;
                     (Expr::Binary(Box::new(a), op, Box::new(b)), span)
@@ -508,6 +519,42 @@ fn eval_expr(
         }
         Expr::Binary(a, BinaryOp::NotEq, b) => {
             Value::Bool(eval_expr(a, funcs, stack)? != eval_expr(b, funcs, stack)?)
+        }
+        Expr::Binary(l, BinaryOp::ListAt, b) => {
+            let listexpr = eval_expr(l, funcs, stack)?;
+            match listexpr {
+                Value::List(listContent) => {
+                    let indexexpr = eval_expr(b, funcs, stack)?;
+                    match indexexpr {
+                        Value::Num(num) => {
+                            if (num as usize) < listContent.len() {
+                                listContent[num as usize].clone()
+                            } else {
+                                return Err(Error {
+                                    span: b.1.clone(),
+                                    msg: format!(
+                                        "'{:?}' index out of range for list length {}",
+                                        num,
+                                        listContent.len()
+                                    ),
+                                });
+                            }
+                        }
+                        iexpr => {
+                            return Err(Error {
+                                span: l.1.clone(),
+                                msg: format!("'{:?}' is not a list", iexpr),
+                            })
+                        }
+                    }
+                }
+                f => {
+                    return Err(Error {
+                        span: l.1.clone(),
+                        msg: format!("'{:?}' is not a list", f),
+                    })
+                }
+            }
         }
         Expr::Call(func, (args, args_span)) => {
             let f = eval_expr(func, funcs, stack)?;
