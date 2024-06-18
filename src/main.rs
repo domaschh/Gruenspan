@@ -520,40 +520,33 @@ fn eval_expr(
         Expr::Binary(a, BinaryOp::NotEq, b) => {
             Value::Bool(eval_expr(a, funcs, stack)? != eval_expr(b, funcs, stack)?)
         }
-        Expr::Binary(l, BinaryOp::ListAt, b) => {
+        Expr::Binary(l, BinaryOp::ListAt, i) => {
             let listexpr = eval_expr(l, funcs, stack)?;
-            match listexpr {
-                Value::List(listContent) => {
-                    let indexexpr = eval_expr(b, funcs, stack)?;
-                    match indexexpr {
-                        Value::Num(num) => {
-                            if (num as usize) < listContent.len() {
-                                listContent[num as usize].clone()
-                            } else {
-                                return Err(Error {
-                                    span: b.1.clone(),
-                                    msg: format!(
-                                        "'{:?}' index out of range for list length {}",
-                                        num,
-                                        listContent.len()
-                                    ),
-                                });
-                            }
-                        }
-                        iexpr => {
-                            return Err(Error {
-                                span: l.1.clone(),
-                                msg: format!("'{:?}' is not a list", iexpr),
-                            })
-                        }
-                    }
-                }
-                f => {
-                    return Err(Error {
-                        span: l.1.clone(),
-                        msg: format!("'{:?}' is not a list", f),
-                    })
-                }
+            let indexexpr = eval_expr(i, funcs, stack)?;
+
+            let Value::List(listContent) = listexpr else {
+                return Err(Error {
+                    span: l.1.clone(),
+                    msg: format!("'{:?}' is not a list", indexexpr),
+                });
+            };
+            let Value::Num(num) = indexexpr else {
+                return Err(Error {
+                    span: i.1.clone(),
+                    msg: format!("'{:?}' is not a valid index", indexexpr),
+                });
+            };
+            if (num as usize) < listContent.len() {
+                listContent[num as usize].clone()
+            } else {
+                return Err(Error {
+                    span: i.1.clone(),
+                    msg: format!(
+                        "'{:?}' index out of range for list length {}",
+                        num,
+                        listContent.len()
+                    ),
+                });
             }
         }
         Expr::Call(func, (args, args_span)) => {

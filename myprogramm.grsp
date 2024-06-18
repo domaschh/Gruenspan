@@ -19,7 +19,7 @@ fn main() {
     let meaning_of_life = three * 14 + 1;
     let list = [1,2,3];
     print("dasd");
-    print(list@4);
+    print(list@"das");
     print("das");
     if meaning_of_life == 42 {
         print(meaning_of_life);
