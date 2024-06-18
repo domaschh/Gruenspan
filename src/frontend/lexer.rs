@@ -1,7 +1,7 @@
 use logos::Logos;
 
 #[derive(Debug, PartialEq, Clone, Default)]
-enum LexingError {
+pub enum LexingError {
     NumberParseError,
     #[default]
     Other,
@@ -16,7 +16,7 @@ impl From<std::num::ParseIntError> for LexingError {
 #[derive(Logos, Debug, PartialEq)]
 #[logos(skip r"[ \t\n\f]+")] // Ignore this regex pattern between tokens
 #[logos(error = LexingError)]
-enum Token {
+pub enum Token {
     #[token("fn")]
     Fn,
     #[token("return")]
