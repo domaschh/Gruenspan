@@ -54,7 +54,7 @@ fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
         .map(Token::Str);
 
     // A parser for operators
-    let op = one_of("+-*/!=")
+    let op = one_of("+-*/!=<>")
         .repeated()
         .at_least(1)
         .collect::<String>()
@@ -144,6 +144,8 @@ enum BinaryOp {
     Div,
     Eq,
     NotEq,
+    LowerT,
+    GreaterT,
 }
 
 pub type Spanned<T> = (T, Span);
@@ -285,13 +287,25 @@ fn expr_parser() -> impl Parser<Token, Spanned<Expr>, Error = Simple<Token>> + C
                     (Expr::Binary(Box::new(a), op, Box::new(b)), span)
                 });
 
+            let op = just(Token::Op("<".to_string()))
+                .to(BinaryOp::LowerT)
+                .or(just(Token::Op(">".to_string())).to(BinaryOp::GreaterT));
+
+            let order = sum
+                .clone()
+                .then(op.then(sum).repeated())
+                .foldl(|a, (op, b)| {
+                    let span = a.1.start..b.1.end;
+                    (Expr::Binary(Box::new(a), op, Box::new(b)), span)
+                });
             // Comparison ops (equal, not-equal) have equal precedence
             let op = just(Token::Op("==".to_string()))
                 .to(BinaryOp::Eq)
                 .or(just(Token::Op("!=".to_string())).to(BinaryOp::NotEq));
-            let compare = sum
+
+            let compare = order
                 .clone()
-                .then(op.then(sum).repeated())
+                .then(op.then(order).repeated())
                 .foldl(|a, (op, b)| {
                     let span = a.1.start..b.1.end;
                     (Expr::Binary(Box::new(a), op, Box::new(b)), span)
@@ -468,6 +482,14 @@ fn eval_expr(
         Expr::Binary(a, BinaryOp::Add, b) => Value::Num(
             eval_expr(a, funcs, stack)?.num(a.1.clone())?
                 + eval_expr(b, funcs, stack)?.num(b.1.clone())?,
+        ),
+        Expr::Binary(a, BinaryOp::LowerT, b) => Value::Bool(
+            eval_expr(a, funcs, stack)?.num(a.1.clone())?
+                < eval_expr(b, funcs, stack)?.num(b.1.clone())?,
+        ),
+        Expr::Binary(a, BinaryOp::GreaterT, b) => Value::Bool(
+            eval_expr(a, funcs, stack)?.num(a.1.clone())?
+                > eval_expr(b, funcs, stack)?.num(b.1.clone())?,
         ),
         Expr::Binary(a, BinaryOp::Sub, b) => Value::Num(
             eval_expr(a, funcs, stack)?.num(a.1.clone())?

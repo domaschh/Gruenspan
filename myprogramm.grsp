@@ -17,7 +17,6 @@ fn factorial(x) {
 fn main() {
     let three = 3;
     let meaning_of_life = three * 14 + 1;
-
     print("Hello, world!");
     print("The meaning of life is...");
 
