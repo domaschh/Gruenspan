@@ -75,7 +75,7 @@ enum Token {
 }
 
 #[cfg(test)]
-mod lexertests {
+mod tests {
     use super::*;
 
     #[test]
