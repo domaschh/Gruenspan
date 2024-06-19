@@ -5,7 +5,7 @@ funca:
     ret
 
 func:
-    push 1
+    local.get
     push 2
     call funca
     ret

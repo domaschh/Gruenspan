@@ -4,32 +4,16 @@
 // errors and still have an error message that points to source code emitted!
 
 // Calculate the factorial of a number
-fn factorial(x) {
-    // Conditionals are supported!
-    if x == 0 {
-        1
-    } else {
-        x * factorial(x - 1)
-    }
+fn myfunc(x, y) {
+     x + y + 100
 }
 
 // The main function
 fn main() {
-    let three = 3;
-    let meaning_of_life = three * 14 + 1;
-    let list = [1,2,3];
-    print("dasd");
-    print(list@1);
-    list@1 = 5;
-    print(list);
-    print("das");
-    if meaning_of_life == 42 {
-        print(meaning_of_life);
-    } else {
-        print("...something we cannot know");
-
-        print("However, I can tell you that the factorial of 10 is...");
-        // Function calling
-        print(factorial(10));
-    }
+    let a  = 3;
+    let b = a * 3;
+    let c = myfunc(a,b);
+    let d = [1];
+    let e = d@"d";
+    print(c);
 }
