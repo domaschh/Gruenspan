@@ -18,6 +18,7 @@ pub enum Token {
     If,
     Else,
     Return,
+    Loop,
 }
 
 impl fmt::Display for Token {
@@ -36,6 +37,7 @@ impl fmt::Display for Token {
             Token::If => write!(f, "if"),
             Token::Else => write!(f, "else"),
             Token::Return => write!(f, "return"),
+            Token::Loop => write!(f, "loop"),
         }
     }
 }
@@ -75,6 +77,7 @@ pub fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
         "true" => Token::Bool(true),
         "false" => Token::Bool(false),
         "null" => Token::Null,
+        "loop" => Token::Loop,
         _ => Token::Ident(ident),
     });
 
@@ -174,6 +177,7 @@ pub enum Expr {
     Binary(Box<Spanned<Self>>, BinaryOp, Box<Spanned<Self>>),
     Call(Box<Spanned<Self>>, Spanned<Vec<Spanned<Self>>>),
     If(Box<Spanned<Self>>, Box<Spanned<Self>>, Box<Spanned<Self>>),
+    Loop(Box<Spanned<Self>>, Box<Spanned<Self>>),
     Print(Box<Spanned<Self>>),
     Assign(String, Box<Spanned<Self>>, Box<Spanned<Self>>),
 }
@@ -390,8 +394,17 @@ pub fn expr_parser() -> impl Parser<Token, Spanned<Expr>, Error = Simple<Token>>
                 })
         });
 
+        let loop_ = recursive(|loop_| {
+            just(Token::Loop)
+                .ignore_then(expr.clone())
+                .then(block.clone())
+                .map_with_span(|(cond, body), span| {
+                    (Expr::Loop(Box::new(cond), Box::new(body)), span)
+                })
+        });
+
         // Both blocks and `if` are 'block expressions' and can appear in the place of statements
-        let block_expr = block.or(if_).or(return_).labelled("block");
+        let block_expr = block.or(if_).or(return_).or(loop_).labelled("block");
 
         let block_chain = block_expr
             .clone()
@@ -619,6 +632,12 @@ pub fn ast_evaluator(
             });
             let res = ast_evaluator(body, funcs, stack)?;
             res
+        }
+        Expr::Loop(cond, body) => {
+            while let Value::Bool(true) = ast_evaluator(cond, funcs, stack)? {
+                ast_evaluator(body, funcs, stack)?;
+            }
+            Value::Null
         }
     })
 }

@@ -155,6 +155,7 @@ fn generate_function_bytecode(
             store_ct += 1;
             generate_function_bytecode(&(**next).0, store_ct, mem_store, operations);
         }
+        Expr::Loop(_, _) => todo!(),
     }
 }
 
