@@ -55,7 +55,7 @@ enum ByteCodeOp {
     GreaterT,
     Equal,
     NotEq,
-    Call(String),
+    Call(String, usize),
     Print,
     JumpTrue,
     JumpFalse,
@@ -83,7 +83,7 @@ fn generate_function_bytecode(
     match expr {
         Expr::Error => unreachable!(),
         Expr::Value(val) => match val {
-            Value::Null => todo!(),
+            Value::Null => {}
             Value::Bool(bool) => operations.push(RelativeOperation::new(ByteCodeOp::Const(
                 BopVal::Boolean(*bool),
             ))),
@@ -96,7 +96,7 @@ fn generate_function_bytecode(
             Value::List(list) => operations.push(RelativeOperation::new(ByteCodeOp::Const(
                 BopVal::List(list.into_iter().map(|val| val.into()).collect()),
             ))),
-            Value::Func(fp) => panic!("generate_function_bytecode something with function"),
+            Value::Func(fp) => println!("When am I called {:?}", fp),
         },
         Expr::List(_) => todo!(),
         Expr::LocalVar(varname) => operations.push(RelativeOperation::new(ByteCodeOp::Load(
@@ -109,7 +109,10 @@ fn generate_function_bytecode(
             store_ct += 1;
             generate_function_bytecode(&(**other).0, store_ct, mem_store, operations);
         }
-        Expr::Then(a, b) => println!("{:?}{:?}", a, b),
+        Expr::Then(this_expr, next_expr) => {
+            generate_function_bytecode(&(**this_expr).0, store_ct, mem_store, operations);
+            generate_function_bytecode(&(**next_expr).0, store_ct, mem_store, operations);
+        }
         Expr::Binary(lhs, operation, rhs) => {
             generate_function_bytecode(&(**lhs).0, store_ct, mem_store, operations);
             generate_function_bytecode(&(**rhs).0, store_ct, mem_store, operations);
@@ -125,8 +128,18 @@ fn generate_function_bytecode(
                 BinaryOp::ListAt => operations.push(RelativeOperation::new(ByteCodeOp::ListAt)),
             }
         }
-        Expr::Call(a, b) => {
-            println!("{:?}{:?}", a, b);
+        Expr::Call(func_name, arguments) => {
+            for arg in arguments.0.iter() {
+                generate_function_bytecode(&arg.0, store_ct, mem_store, operations);
+            }
+            let Expr::LocalVar(funcname_vale) = &func_name.0 else {
+                panic!("Funcname not string");
+            };
+
+            operations.push(RelativeOperation::new(ByteCodeOp::Call(
+                funcname_vale.clone(),
+                arguments.0.len(),
+            )));
         }
         Expr::If(a, b, c) => todo!(),
         Expr::Print(expr) => {
