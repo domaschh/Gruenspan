@@ -1,4 +1,4 @@
-use chumsky::prelude::*;
+use chumsky::{prelude::*, primitive::Just};
 use paste::paste;
 use std::{collections::HashMap, fmt};
 pub type Span = std::ops::Range<usize>;
@@ -175,6 +175,7 @@ pub enum Expr {
     Call(Box<Spanned<Self>>, Spanned<Vec<Spanned<Self>>>),
     If(Box<Spanned<Self>>, Box<Spanned<Self>>, Box<Spanned<Self>>),
     Print(Box<Spanned<Self>>),
+    Assign(String, Box<Spanned<Self>>, Box<Spanned<Self>>),
 }
 
 // A function node in the AST.
@@ -202,6 +203,13 @@ pub fn expr_parser() -> impl Parser<Token, Spanned<Expr>, Error = Simple<Token>>
             })
             .labelled("identifier");
 
+            let assign_ = ident
+                .clone()
+                .then_ignore(just(Token::Op("=".to_string())))
+                .then(raw_expr.clone())
+                .then_ignore(just(Token::Ctrl(';')))
+                .then(expr.clone())
+                .map(|((name, val), body)| Expr::Assign(name, Box::new(val), Box::new(body)));
             // A list of expressions
             let items = expr
                 .clone()
@@ -209,12 +217,11 @@ pub fn expr_parser() -> impl Parser<Token, Spanned<Expr>, Error = Simple<Token>>
                 .then_ignore(just(Token::Ctrl(',')).or_not())
                 .or_not()
                 .map(|item| item.unwrap_or_else(Vec::new));
-
             // A let expression
             let let_ = just(Token::Let)
                 .ignore_then(ident)
                 .then_ignore(just(Token::Op("=".to_string())))
-                .then(raw_expr)
+                .then(raw_expr.clone())
                 .then_ignore(just(Token::Ctrl(';')))
                 .then(expr.clone())
                 .map(|((name, val), body)| Expr::Let(name, Box::new(val), Box::new(body)));
@@ -226,6 +233,7 @@ pub fn expr_parser() -> impl Parser<Token, Spanned<Expr>, Error = Simple<Token>>
 
             // 'Atoms' are expressions that contain no ambiguity
             let atom = val
+                .or(assign_)
                 .or(ident.map(Expr::LocalVar))
                 .or(let_)
                 .or(list)
@@ -601,6 +609,17 @@ pub fn ast_evaluator(
             let val = ast_evaluator(a, funcs, stack)?;
             println!("{}", val);
             val
+        }
+        Expr::Assign(local, val, body) => {
+            let val = ast_evaluator(val, funcs, stack)?;
+            stack.into_iter().for_each(|elem| {
+                if elem.0 == *local {
+                    elem.1 = val.clone();
+                }
+            });
+            let res = ast_evaluator(body, funcs, stack)?;
+            stack.pop();
+            res
         }
     })
 }

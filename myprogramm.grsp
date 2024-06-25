@@ -3,17 +3,15 @@
 // Spans are propagated to the interpreted AST so you can even invoke runtime
 // errors and still have an error message that points to source code emitted!
 
-// Calculate the factorial of a number
-fn myfunc(x, y) {
-    let a = 100 + 200;
-    let b = 200;
-    return x + y + a + b
+fn myfunc(x) {
+    let b = 1;
+    b = 2;
+    return x + b
 }
 
 // The main function
 fn main() {
-    let a  = 3;
-    let b = a * 3;
-    let c = myfunc(a,b);
+    let a = 1;
+    let c = myfunc(a);
     print(c);
 }
