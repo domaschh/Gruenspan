@@ -1,10 +1,11 @@
 use crate::parser::{BinaryOp, Expr, Func, Spanned, Value};
 use anyhow::{bail, Result};
 use chumsky::chain::Chain;
-use std::collections::HashMap;
+use core::fmt;
+use std::{collections::HashMap, path::Display};
 
 #[derive(Debug)]
-struct RelativeOperation {
+pub struct RelativeOperation {
     line_nr: usize,
     bop_type: ByteCodeOp,
 }
@@ -63,9 +64,9 @@ enum ByteCodeOp {
 
 #[derive(Debug)]
 pub struct BFunc {
-    name: String,
-    ops: Vec<RelativeOperation>,
-    arg_ct: usize,
+    pub name: String,
+    pub ops: Vec<RelativeOperation>,
+    pub arg_ct: usize,
 }
 
 impl BFunc {
