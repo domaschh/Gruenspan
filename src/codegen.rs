@@ -1,21 +1,15 @@
-use crate::parser::{BinaryOp, Expr, Func, Spanned, Value};
+use crate::parser::{BinaryOp, Expr, Func, Value};
 use anyhow::{bail, Result};
-use chumsky::chain::Chain;
-use core::fmt;
-use std::{collections::HashMap, path::Display};
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct RelativeOperation {
-    line_nr: usize,
     bop_type: ByteCodeOp,
 }
 
 impl RelativeOperation {
     fn new(bop_type: ByteCodeOp) -> Self {
-        RelativeOperation {
-            line_nr: 0,
-            bop_type,
-        }
+        RelativeOperation { bop_type }
     }
 }
 
@@ -43,8 +37,8 @@ impl From<&Value> for BopVal {
 #[derive(Debug)]
 enum ByteCodeOp {
     Return,
-    Local(usize),
-    Store(usize),
+    LocalGet(usize),
+    LocalSet(usize),
     Load(usize),
     Const(BopVal),
     Add,
@@ -60,6 +54,7 @@ enum ByteCodeOp {
     Print,
     JumpTrue,
     JumpFalse,
+    End,
 }
 
 #[derive(Debug)]
@@ -100,13 +95,13 @@ fn generate_function_bytecode(
             Value::Func(fp) => println!("When am I called {:?}", fp),
         },
         Expr::List(_) => todo!(),
-        Expr::LocalVar(varname) => operations.push(RelativeOperation::new(ByteCodeOp::Load(
+        Expr::LocalVar(varname) => operations.push(RelativeOperation::new(ByteCodeOp::LocalGet(
             *mem_store.get(varname).unwrap(),
         ))),
         Expr::Let(variable, expression, other) => {
             generate_function_bytecode(&(**expression).0, store_ct, mem_store, operations);
             mem_store.insert(variable.clone(), store_ct);
-            operations.push(RelativeOperation::new(ByteCodeOp::Store(store_ct)));
+            operations.push(RelativeOperation::new(ByteCodeOp::LocalSet(store_ct)));
             store_ct += 1;
             generate_function_bytecode(&(**other).0, store_ct, mem_store, operations);
         }
@@ -154,6 +149,28 @@ fn generate_function_bytecode(
     }
 }
 
+fn generate_function_code(function: &Func) -> Vec<RelativeOperation> {
+    let mut operations = Vec::new();
+    let mut mem_store: HashMap<String, usize> = HashMap::new();
+    let mut mem_counter = 0;
+
+    //Generate Local.Get n for the parameters
+    for (i, arg) in function.args.iter().enumerate() {
+        operations.push(RelativeOperation::new(ByteCodeOp::LocalGet(i)));
+        mem_store.insert(arg.clone(), mem_counter);
+        mem_counter += 1;
+    }
+    //the into call recursively constructs the bytecode
+
+    println!("Memcount after argumenst {mem_counter}");
+    generate_function_bytecode(
+        &function.body.0,
+        mem_counter,
+        &mut mem_store,
+        &mut operations,
+    );
+    operations
+}
 impl From<&Func> for Vec<RelativeOperation> {
     fn from(function: &Func) -> Self {
         let mut operations = Vec::new();
@@ -162,7 +179,7 @@ impl From<&Func> for Vec<RelativeOperation> {
 
         //Generate Local.Get n for the parameters
         for (i, arg) in function.args.iter().enumerate() {
-            operations.push(RelativeOperation::new(ByteCodeOp::Local(i)));
+            operations.push(RelativeOperation::new(ByteCodeOp::LocalGet(i)));
             mem_store.insert(arg.clone(), mem_counter);
             mem_counter += 1;
         }
