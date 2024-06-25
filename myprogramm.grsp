@@ -6,14 +6,14 @@
 fn myfunc(x) {
     let b = 1;
     let c = 1;
-    if b == 1 {
+    let y = (if b == 1 {
         c = 3;
         3
     } else {
         c = 2;
         1
-    }
-    return x + c
+    });
+    return x + c + y
 }
 
 // The main function
