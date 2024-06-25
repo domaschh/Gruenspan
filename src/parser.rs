@@ -164,7 +164,7 @@ pub enum Expr {
     Error,
     Value(Value),
     List(Vec<Spanned<Self>>),
-    Local(String),
+    LocalVar(String),
     Let(String, Box<Spanned<Self>>, Box<Spanned<Self>>),
     Then(Box<Spanned<Self>>, Box<Spanned<Self>>),
     Binary(Box<Spanned<Self>>, BinaryOp, Box<Spanned<Self>>),
@@ -222,7 +222,7 @@ pub fn expr_parser() -> impl Parser<Token, Spanned<Expr>, Error = Simple<Token>>
 
             // 'Atoms' are expressions that contain no ambiguity
             let atom = val
-                .or(ident.map(Expr::Local))
+                .or(ident.map(Expr::LocalVar))
                 .or(let_)
                 .or(list)
                 // In Nano Rust, `print` is just a keyword, just like Python 2, for simplicity
@@ -476,7 +476,7 @@ pub fn ast_evaluator(
                 .map(|item| ast_evaluator(item, funcs, stack))
                 .collect::<Result<_, _>>()?,
         ),
-        Expr::Local(name) => stack
+        Expr::LocalVar(name) => stack
             .iter()
             .rev()
             .find(|(l, _)| l == name)

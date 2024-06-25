@@ -24,7 +24,7 @@ fn main() {
             //TODO cloning here is super expensive big nono
             let generator = Generator::new(funcs.clone());
             let bytecode = generator.generate_bytecod().unwrap();
-            println!("Following bytecode was generated {:?}", bytecode);
+            println!("Following bytecode was generated{:?}", bytecode);
             //This should not be in the final output this is the AST inline interpreter
             if let Some(main) = funcs.get("main") {
                 match ast_evaluator(&main.body, &funcs, &mut Vec::new()) {
