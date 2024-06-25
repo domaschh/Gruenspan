@@ -486,7 +486,10 @@ pub fn ast_evaluator(
     stack: &mut Vec<(String, Value)>,
 ) -> Result<Value, Error> {
     Ok(match &expr.0 {
-        Expr::Return(returnexpr) => ast_evaluator(returnexpr, funcs, stack)?,
+        Expr::Return(returnexpr) => {
+            println!("Stack in return {:?}", stack);
+            ast_evaluator(returnexpr, funcs, stack)?
+        }
         Expr::Error => unreachable!(), // Error expressions only get created by parser errors, so cannot exist in a valid AST
         Expr::Value(val) => val.clone(),
         Expr::List(items) => Value::List(
@@ -495,16 +498,19 @@ pub fn ast_evaluator(
                 .map(|item| ast_evaluator(item, funcs, stack))
                 .collect::<Result<_, _>>()?,
         ),
-        Expr::LocalVar(name) => stack
-            .iter()
-            .rev()
-            .find(|(l, _)| l == name)
-            .map(|(_, v)| v.clone())
-            .or_else(|| Some(Value::Func(name.clone())).filter(|_| funcs.contains_key(name)))
-            .ok_or_else(|| Error {
-                span: expr.1.clone(),
-                msg: format!("No such variable '{}' in scope", name),
-            })?,
+        Expr::LocalVar(name) => {
+            println!("Stack in Localvar {:?}", stack);
+            stack
+                .iter()
+                .rev()
+                .find(|(l, _)| l == name)
+                .map(|(_, v)| v.clone())
+                .or_else(|| Some(Value::Func(name.clone())).filter(|_| funcs.contains_key(name)))
+                .ok_or_else(|| Error {
+                    span: expr.1.clone(),
+                    msg: format!("No such variable '{}' in scope", name),
+                })?
+        }
         Expr::Let(local, val, body) => {
             let val = ast_evaluator(val, funcs, stack)?;
             stack.push((local.clone(), val));
@@ -513,6 +519,7 @@ pub fn ast_evaluator(
             res
         }
         Expr::Then(a, b) => {
+            println!("Stack in then{:?}", stack);
             ast_evaluator(a, funcs, stack)?;
             ast_evaluator(b, funcs, stack)?
         }
@@ -594,6 +601,7 @@ pub fn ast_evaluator(
         }
         Expr::If(cond, a, b) => {
             let c = ast_evaluator(cond, funcs, stack)?;
+            println!("If stack{:?}", stack);
             match c {
                 Value::Bool(true) => ast_evaluator(a, funcs, stack)?,
                 Value::Bool(false) => ast_evaluator(b, funcs, stack)?,
@@ -618,7 +626,7 @@ pub fn ast_evaluator(
                 }
             });
             let res = ast_evaluator(body, funcs, stack)?;
-            stack.pop();
+            println!("Stack in assign {:?}", stack);
             res
         }
     })
