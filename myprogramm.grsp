@@ -5,8 +5,15 @@
 
 fn myfunc(x) {
     let b = 1;
-    b = 2;
-    return x + b
+    let c = 1;
+    if b == 1 {
+        c = 1;
+        3
+    } else {
+        c = 2;
+        1
+    }
+    return x + c
 }
 
 // The main function
