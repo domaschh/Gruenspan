@@ -5,7 +5,10 @@
 
 // Calculate the factorial of a number
 fn myfunc(x, y) {
-     x + y + 100
+    let a = 100 + 200;
+    let b = 200;
+
+     x + y + a + b
 }
 
 // The main function
@@ -13,7 +16,5 @@ fn main() {
     let a  = 3;
     let b = a * 3;
     let c = myfunc(a,b);
-    let d = [1];
-    let e = d@"d";
     print(c);
 }
