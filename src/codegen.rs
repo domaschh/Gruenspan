@@ -41,6 +41,7 @@ impl From<&Value> for BopVal {
 
 #[derive(Debug)]
 enum ByteCodeOp {
+    Return,
     Local(usize),
     Store(usize),
     Load(usize),
@@ -131,6 +132,10 @@ fn generate_function_bytecode(
         Expr::Print(expr) => {
             generate_function_bytecode(&(**expr).0, store_ct, mem_store, operations);
             operations.push(RelativeOperation::new(ByteCodeOp::Print))
+        }
+        Expr::Return(expr) => {
+            generate_function_bytecode(&(**expr).0, store_ct, mem_store, operations);
+            operations.push(RelativeOperation::new(ByteCodeOp::Return))
         }
     }
 }

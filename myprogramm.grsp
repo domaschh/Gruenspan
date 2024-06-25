@@ -7,7 +7,7 @@
 fn myfunc(x, y) {
     let a = 100 + 200;
     let b = 200;
-    return x + y + a + b
+    return(x + y + a + b)
 }
 
 // The main function

@@ -17,6 +17,7 @@ pub enum Token {
     Print,
     If,
     Else,
+    Return,
 }
 
 impl fmt::Display for Token {
@@ -34,6 +35,7 @@ impl fmt::Display for Token {
             Token::Print => write!(f, "print"),
             Token::If => write!(f, "if"),
             Token::Else => write!(f, "else"),
+            Token::Return => write!(f, "return"),
         }
     }
 }
@@ -65,6 +67,7 @@ pub fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
     // A parser for identifiers and keywords
     let ident = text::ident().map(|ident: String| match ident.as_str() {
         "fn" => Token::Fn,
+        "return" => Token::Return,
         "let" => Token::Let,
         "print" => Token::Print,
         "if" => Token::If,
@@ -166,6 +169,7 @@ pub enum Expr {
     List(Vec<Spanned<Self>>),
     LocalVar(String),
     Let(String, Box<Spanned<Self>>, Box<Spanned<Self>>),
+    Return(Box<Spanned<Self>>),
     Then(Box<Spanned<Self>>, Box<Spanned<Self>>),
     Binary(Box<Spanned<Self>>, BinaryOp, Box<Spanned<Self>>),
     Call(Box<Spanned<Self>>, Spanned<Vec<Spanned<Self>>>),
@@ -347,6 +351,12 @@ pub fn expr_parser() -> impl Parser<Token, Spanned<Expr>, Error = Simple<Token>>
                 |span| (Expr::Error, span),
             ));
 
+        let return_ = recursive(|return_| {
+            just(Token::Return)
+                .ignore_then(expr.clone())
+                .map_with_span(|return_rexpr, span| (Expr::Return(Box::new(return_rexpr)), span))
+        });
+
         let if_ = recursive(|if_| {
             just(Token::If)
                 .ignore_then(expr.clone())
@@ -373,7 +383,7 @@ pub fn expr_parser() -> impl Parser<Token, Spanned<Expr>, Error = Simple<Token>>
         });
 
         // Both blocks and `if` are 'block expressions' and can appear in the place of statements
-        let block_expr = block.or(if_).labelled("block");
+        let block_expr = block.or(if_).or(return_).labelled("block");
 
         let block_chain = block_expr
             .clone()
@@ -468,6 +478,7 @@ pub fn ast_evaluator(
     stack: &mut Vec<(String, Value)>,
 ) -> Result<Value, Error> {
     Ok(match &expr.0 {
+        Expr::Return(returnexpr) => ast_evaluator(returnexpr, funcs, stack)?,
         Expr::Error => unreachable!(), // Error expressions only get created by parser errors, so cannot exist in a valid AST
         Expr::Value(val) => val.clone(),
         Expr::List(items) => Value::List(
