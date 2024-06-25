@@ -601,7 +601,6 @@ pub fn ast_evaluator(
         }
         Expr::If(cond, a, b) => {
             let c = ast_evaluator(cond, funcs, stack)?;
-            println!("If stack{:?}", stack);
             match c {
                 Value::Bool(true) => ast_evaluator(a, funcs, stack)?,
                 Value::Bool(false) => ast_evaluator(b, funcs, stack)?,
@@ -615,7 +614,6 @@ pub fn ast_evaluator(
         }
         Expr::Print(a) => {
             let val = ast_evaluator(a, funcs, stack)?;
-            println!("{}", val);
             val
         }
         Expr::Assign(local, val, body) => {
@@ -626,7 +624,6 @@ pub fn ast_evaluator(
                 }
             });
             let res = ast_evaluator(body, funcs, stack)?;
-            println!("Stack in assign {:?}", stack);
             res
         }
     })
