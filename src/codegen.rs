@@ -190,10 +190,11 @@ fn generate_function_bytecode(
             )));
         }
         Expr::If(cond, then, els) => {
+            let increased_labelctr = label_ctr + 1;
             generate_function_bytecode(
                 &(**cond).0,
                 store_ct,
-                label_ctr,
+                increased_labelctr,
                 method_name,
                 mem_store,
                 operations,
@@ -205,7 +206,7 @@ fn generate_function_bytecode(
             generate_function_bytecode(
                 &(**then).0,
                 store_ct,
-                label_ctr,
+                increased_labelctr,
                 method_name,
                 mem_store,
                 operations,
@@ -217,7 +218,7 @@ fn generate_function_bytecode(
             generate_function_bytecode(
                 &(**els).0,
                 store_ct,
-                label_ctr,
+                increased_labelctr,
                 method_name,
                 mem_store,
                 operations,
@@ -269,6 +270,7 @@ fn generate_function_bytecode(
             );
         }
         Expr::Loop(cond, body) => {
+            let increased_labelctr = label_ctr + 1;
             operations.push(RelativeOperation::new(ByteCodeOp::Label(format!(
                 "{}_{}_{}",
                 method_name, "loopstart", label_ctr
@@ -276,7 +278,7 @@ fn generate_function_bytecode(
             generate_function_bytecode(
                 &(**cond).0,
                 store_ct,
-                label_ctr,
+                increased_labelctr,
                 method_name,
                 mem_store,
                 operations,
@@ -292,7 +294,7 @@ fn generate_function_bytecode(
             generate_function_bytecode(
                 &(**body).0,
                 store_ct,
-                label_ctr,
+                increased_labelctr,
                 method_name,
                 mem_store,
                 operations,
