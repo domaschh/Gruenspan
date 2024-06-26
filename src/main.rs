@@ -16,7 +16,7 @@ fn main() {
     let src = fs::read_to_string(env::args().nth(1).expect("Expected file argument"))
         .expect("Failed to read file");
 
-    let (tokens, errs) = lexer().parse_recovery(src.as_str());
+    let (tokens, mut errs) = lexer().parse_recovery(src.as_str());
 
     let parse_errs = if let Some(tokens) = tokens {
         let len = src.chars().count();
@@ -27,20 +27,20 @@ fn main() {
             //TODO cloning here is super expensive big nono
             let generator = Generator::new(funcs.clone());
             let bytecode = generator.generate_bytecod().unwrap();
-            // bytecode.iter().for_each(|op| {
-            //     println!("Name: {}", op.name);
-            //     println!("Arg ct: {}", op.arg_ct);
-            //     println!("Operations");
-            //     op.ops.iter().for_each(|op| println!("{:?}", op));
-            // });
+            // // bytecode.iter().for_each(|op| {
+            // //     println!("Name: {}", op.name);
+            // //     println!("Arg ct: {}", op.arg_ct);
+            // //     println!("Operations");
+            // //     op.ops.iter().for_each(|op| println!("{:?}", op));
+            // // });
             let mut runtime = Runtime::new(bytecode);
-            // println!("Execution in VM starts");
+            // // println!("Execution in VM starts");
             if let Ok(result) = runtime.execute_program() {
                 println!("Runtime Execution returned: {}", result);
             } else {
                 panic!("Runtime Execution failed");
             }
-            //This should not be in the final output this is the AST inline interpreter
+            // This should not be in the final output this is the AST inline interpreter
             // println!("Ast interpreter starts");
             // if let Some(main) = funcs.get("main") {
             //     match ast_evaluator(&main.body, &funcs, &mut Vec::new()) {

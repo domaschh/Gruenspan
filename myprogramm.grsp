@@ -23,7 +23,7 @@ fn main() {
         i=i+1;
         i
     });
-    print(x+100);
+    print(x+100+true);
     let c = mult(a, b);
     print(c)
 }
