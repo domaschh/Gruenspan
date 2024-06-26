@@ -63,6 +63,10 @@ impl Runtime {
     pub fn execute_program(&mut self) -> Result<usize, Error> {
         while self.operations[self.pc] != ByteCodeOp::End {
             // println!("{}", self);
+            // println!("Call {:?}", self.call_stack);
+            // println!("Val {:?}", self.value_stack);
+            // println!("Fctx {:?}", self.ftxc_stack);
+
             match &self.operations[self.pc] {
                 ByteCodeOp::Return => {
                     self.pc = self.call_stack.pop().unwrap();
@@ -103,7 +107,7 @@ impl Runtime {
                     let Some(ByteCodeValue::Number(b)) = self.value_stack.pop() else {
                         panic!("RT Sub received non number");
                     };
-                    self.push_next(ByteCodeValue::Number(a - b))
+                    self.push_next(ByteCodeValue::Number(b - a))
                 }
                 ByteCodeOp::Div => {
                     let Some(ByteCodeValue::Number(a)) = self.value_stack.pop() else {
