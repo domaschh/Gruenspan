@@ -131,7 +131,7 @@ impl Runtime {
                     let Some(ByteCodeValue::Number(b)) = self.value_stack.pop() else {
                         panic!("RT LowerT received non number");
                     };
-                    self.push_next(ByteCodeValue::Boolean(a < b))
+                    self.push_next(ByteCodeValue::Boolean(b < a))
                 }
                 ByteCodeOp::GreaterT => {
                     let Some(ByteCodeValue::Number(a)) = self.value_stack.pop() else {
@@ -140,7 +140,7 @@ impl Runtime {
                     let Some(ByteCodeValue::Number(b)) = self.value_stack.pop() else {
                         panic!("RT GreaterT received non number");
                     };
-                    self.push_next(ByteCodeValue::Boolean(a > b))
+                    self.push_next(ByteCodeValue::Boolean(b > a))
                 }
                 ByteCodeOp::Equal => {
                     let Some(a) = self.value_stack.pop() else {
@@ -198,6 +198,7 @@ impl Runtime {
                     self.pc += 1;
                 }
                 ByteCodeOp::End => break,
+                ByteCodeOp::Jump(label) => self.pc = *self.label_offsets.get(label).unwrap(),
             }
         }
         Ok(0)

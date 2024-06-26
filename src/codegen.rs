@@ -71,6 +71,7 @@ pub enum ByteCodeOp {
     NotEq,
     Call(String, usize),
     Print,
+    Jump(String),
     JumpTrue(String),
     JumpFalse(String),
     Label(String),
@@ -218,7 +219,7 @@ fn generate_function_bytecode(
                 mem_store,
                 operations,
             );
-            operations.push(RelativeOperation::new(ByteCodeOp::JumpTrue(format!(
+            operations.push(RelativeOperation::new(ByteCodeOp::JumpFalse(format!(
                 "{}_{}_{}",
                 method_name, "else", label_ctr
             ))));
@@ -230,6 +231,10 @@ fn generate_function_bytecode(
                 mem_store,
                 operations,
             );
+            operations.push(RelativeOperation::new(ByteCodeOp::Jump(format!(
+                "{}_{}_{}",
+                method_name, "ifend", label_ctr
+            ))));
             operations.push(RelativeOperation::new(ByteCodeOp::Label(format!(
                 "{}_{}_{}",
                 method_name, "else", label_ctr
@@ -242,6 +247,10 @@ fn generate_function_bytecode(
                 mem_store,
                 operations,
             );
+            operations.push(RelativeOperation::new(ByteCodeOp::Label(format!(
+                "{}_{}_{}",
+                method_name, "ifend", label_ctr
+            ))));
         }
         Expr::Print(expr) => {
             generate_function_bytecode(
