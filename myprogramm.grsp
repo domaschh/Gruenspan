@@ -17,6 +17,10 @@ fn main() {
         b = 3;
         0
     };
+    let i =0;
+    while i<10 {
+        print(i);
+    }
     let c = mult(a, b);
     print(c)
 }
