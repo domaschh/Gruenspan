@@ -281,10 +281,6 @@ fn generate_function_bytecode(
                 mem_store,
                 operations,
             );
-            operations.push(RelativeOperation::new(ByteCodeOp::JumpTrue(format!(
-                "{}_{}_{}",
-                method_name, "loopbody", label_ctr
-            ))));
             operations.push(RelativeOperation::new(ByteCodeOp::JumpFalse(format!(
                 "{}_{}_{}",
                 method_name, "loopend", label_ctr
