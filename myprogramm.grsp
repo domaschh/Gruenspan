@@ -3,29 +3,13 @@
 // Spans are propagated to the interpreted AST so you can even invoke runtime
 // errors and still have an error message that points to source code emitted!
 
-fn myfunc(x) {
-    let b = 1;
-    let c = 1;
-    let y = (if b == 1 {
-        c = 3;
-        3
-    } else {
-        c = 2;
-        1
-    });
-    return x + c + y
+fn mult(x,y) {
+    return x * y
 }
 
-fn loopfunc() {
-    let i = 0;
-    loop i<10 {
-        print(i);
-        i=i+1;
-        1
-    }
-}
-
-// The main function
 fn main() {
-    loopfunc();
+    let a = 1;
+    let b = 2;
+    let c = mult(a, b);
+    print(c)
 }

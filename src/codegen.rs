@@ -1,46 +1,65 @@
 use crate::parser::{BinaryOp, Expr, Func, Value};
 use anyhow::{bail, Result};
-use std::{collections::HashMap, fmt::format};
+use std::{
+    collections::HashMap,
+    fmt::{self, format},
+    path::Display,
+    pin::Pin,
+};
 
 #[derive(Debug)]
 pub struct RelativeOperation {
-    bop_type: ByteCodeOp,
+    pub bytecode_op: ByteCodeOp,
 }
 
 impl RelativeOperation {
     fn new(bop_type: ByteCodeOp) -> Self {
-        RelativeOperation { bop_type }
+        RelativeOperation {
+            bytecode_op: bop_type,
+        }
     }
 }
 
-#[derive(Debug)]
-enum BopVal {
+#[derive(Debug, Clone, PartialEq)]
+pub enum ByteCodeValue {
     Number(f64),
     Boolean(bool),
     String(String),
-    List(Vec<BopVal>),
+    List(Vec<ByteCodeValue>),
+    Return,
 }
 
-impl From<&Value> for BopVal {
+impl fmt::Display for ByteCodeValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ByteCodeValue::Number(v) => write!(f, "{}", v),
+            ByteCodeValue::Boolean(v) => write!(f, "{}", v),
+            ByteCodeValue::String(v) => write!(f, "{}", v),
+            ByteCodeValue::List(v) => write!(f, "{:?}", v),
+            ByteCodeValue::Return => write!(f, "Return"),
+        }
+    }
+}
+
+impl From<&Value> for ByteCodeValue {
     fn from(value: &Value) -> Self {
         match value {
             Value::Null => panic!("Wtf converstion from &Val to BopVal failed"),
-            Value::Bool(b) => BopVal::Boolean(*b),
-            Value::Num(n) => BopVal::Number(*n),
-            Value::Str(sr) => BopVal::String(sr.clone()),
-            Value::List(l) => BopVal::List(l.into_iter().map(|a| a.into()).collect()),
+            Value::Bool(b) => ByteCodeValue::Boolean(*b),
+            Value::Num(n) => ByteCodeValue::Number(*n),
+            Value::Str(sr) => ByteCodeValue::String(sr.clone()),
+            Value::List(l) => ByteCodeValue::List(l.into_iter().map(|a| a.into()).collect()),
             Value::Func(fp) => panic!("Wtf converstion from &Val to BopVal failed"),
         }
     }
 }
 
-#[derive(Debug)]
-enum ByteCodeOp {
+#[derive(Debug, Clone, PartialEq)]
+pub enum ByteCodeOp {
     Return,
     LocalGet(usize),
     LocalSet(usize),
-    Load(usize),
-    Const(BopVal),
+    Const(ByteCodeValue),
     Add,
     Sub,
     Div,
@@ -54,20 +73,20 @@ enum ByteCodeOp {
     Print,
     JumpTrue(String),
     JumpFalse(String),
-    If,
     Label(String),
+    End,
 }
 
 #[derive(Debug)]
-pub struct BFunc {
+pub struct ByteCodeFunction {
     pub name: String,
     pub ops: Vec<RelativeOperation>,
     pub arg_ct: usize,
 }
 
-impl BFunc {
+impl ByteCodeFunction {
     fn new(name: String, ops: Vec<RelativeOperation>, arg_ct: usize) -> Self {
-        BFunc { name, ops, arg_ct }
+        ByteCodeFunction { name, ops, arg_ct }
     }
 }
 
@@ -84,23 +103,27 @@ fn generate_function_bytecode(
         Expr::Value(val) => match val {
             Value::Null => {}
             Value::Bool(bool) => operations.push(RelativeOperation::new(ByteCodeOp::Const(
-                BopVal::Boolean(*bool),
+                ByteCodeValue::Boolean(*bool),
             ))),
             Value::Num(num) => operations.push(RelativeOperation::new(ByteCodeOp::Const(
-                BopVal::Number(*num),
+                ByteCodeValue::Number(*num),
             ))),
             Value::Str(str) => operations.push(RelativeOperation::new(ByteCodeOp::Const(
-                BopVal::String(str.clone()),
+                ByteCodeValue::String(str.clone()),
             ))),
             Value::List(list) => operations.push(RelativeOperation::new(ByteCodeOp::Const(
-                BopVal::List(list.into_iter().map(|val| val.into()).collect()),
+                ByteCodeValue::List(list.into_iter().map(|val| val.into()).collect()),
             ))),
             Value::Func(fp) => println!("When am I called {:?}", fp),
         },
         Expr::List(_) => todo!(),
-        Expr::LocalVar(varname) => operations.push(RelativeOperation::new(ByteCodeOp::LocalGet(
-            *mem_store.get(varname).unwrap(),
-        ))),
+        Expr::LocalVar(varname) => {
+            println!("{:?}", varname);
+            println!("{:?}", mem_store);
+            operations.push(RelativeOperation::new(ByteCodeOp::LocalGet(
+                *mem_store.get(varname).unwrap(),
+            )))
+        }
         Expr::Let(variable, expression, other) => {
             generate_function_bytecode(
                 &(**expression).0,
@@ -236,6 +259,8 @@ fn generate_function_bytecode(
             operations.push(RelativeOperation::new(ByteCodeOp::Print))
         }
         Expr::Return(expr) => {
+            println!("{:?}", expr);
+            println!("{:?}", mem_store);
             generate_function_bytecode(
                 &(**expr).0,
                 store_ct,
@@ -314,25 +339,26 @@ fn generate_function_bytecode(
 fn generate_function_code(function: &Func, function_name: &str) -> Vec<RelativeOperation> {
     let mut operations = Vec::new();
     let mut mem_store: HashMap<String, usize> = HashMap::new();
-    let mut local_ctr = 0;
-    let mut label_ctr = 0;
-    //Generate Local.Get n for the parameters
-    for (i, arg) in function.args.iter().enumerate() {
-        operations.push(RelativeOperation::new(ByteCodeOp::LocalGet(i)));
-        mem_store.insert(arg.clone(), local_ctr);
-        local_ctr += 1;
-    }
-    //the into call recursively constructs the bytecode
+    let label_ctr = 0;
+    operations.push(RelativeOperation::new(ByteCodeOp::Label(
+        function_name.to_string(),
+    )));
 
-    println!("Memcount after argumenst {local_ctr}");
+    for (i, arg) in function.args.iter().enumerate() {
+        mem_store.insert(arg.clone(), i);
+    }
+
     generate_function_bytecode(
         &function.body.0,
-        local_ctr,
+        function.args.len(),
         label_ctr,
         function_name,
         &mut mem_store,
         &mut operations,
     );
+    if function_name == "main" {
+        operations.push(RelativeOperation::new(ByteCodeOp::End))
+    }
     operations
 }
 
@@ -345,13 +371,13 @@ impl Generator {
         Generator { ast }
     }
     /// Takes the bastract syntax tree stored in the Generator and prints the generated bytecode
-    pub fn generate_bytecod(&self) -> Result<Vec<BFunc>> {
+    pub fn generate_bytecod(&self) -> Result<Vec<ByteCodeFunction>> {
         if self.ast.contains_key("main") {
             Ok(self
                 .ast
                 .iter()
                 .map(|func_and_name| {
-                    BFunc::new(
+                    ByteCodeFunction::new(
                         func_and_name.0.clone(),
                         generate_function_code(func_and_name.1, &func_and_name.0),
                         func_and_name.1.args.len(),
