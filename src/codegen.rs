@@ -117,13 +117,9 @@ fn generate_function_bytecode(
             Value::Func(fp) => println!("When am I called {:?}", fp),
         },
         Expr::List(_) => todo!(),
-        Expr::LocalVar(varname) => {
-            println!("{:?}", varname);
-            println!("{:?}", mem_store);
-            operations.push(RelativeOperation::new(ByteCodeOp::LocalGet(
-                *mem_store.get(varname).unwrap(),
-            )))
-        }
+        Expr::LocalVar(varname) => operations.push(RelativeOperation::new(ByteCodeOp::LocalGet(
+            *mem_store.get(varname).unwrap(),
+        ))),
         Expr::Let(variable, expression, other) => {
             generate_function_bytecode(
                 &(**expression).0,
@@ -259,8 +255,6 @@ fn generate_function_bytecode(
             operations.push(RelativeOperation::new(ByteCodeOp::Print))
         }
         Expr::Return(expr) => {
-            println!("{:?}", expr);
-            println!("{:?}", mem_store);
             generate_function_bytecode(
                 &(**expr).0,
                 store_ct,

@@ -33,8 +33,8 @@ fn main() {
                 println!("Operations");
                 op.ops.iter().for_each(|op| println!("{:?}", op));
             });
-            println!("Execution in VM starts");
             let mut runtime = Runtime::new(bytecode);
+            println!("Execution in VM starts");
             if let Ok(result) = runtime.execute_program() {
                 println!("Runtime Execution returned: {}", result);
             } else {

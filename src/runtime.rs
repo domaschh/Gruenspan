@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{collections::HashMap, fmt::write, process::exit};
+use std::collections::HashMap;
 
 use anyhow::{Error, Result};
 
@@ -61,9 +61,8 @@ impl Runtime {
     }
 
     pub fn execute_program(&mut self) -> Result<usize, Error> {
-        println!("Ops{:?}", self.operations);
         while self.operations[self.pc] != ByteCodeOp::End {
-            println!("{}", self);
+            // println!("{}", self);
             match &self.operations[self.pc] {
                 ByteCodeOp::Return => {
                     self.pc = self.call_stack.pop().unwrap();
@@ -178,6 +177,7 @@ impl Runtime {
                     let Some(value) = self.value_stack.pop() else {
                         panic!("RT Add received non number");
                     };
+                    println!("{}", value);
                     self.pc += 1;
                 }
                 ByteCodeOp::JumpTrue(label) => {

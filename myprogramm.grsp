@@ -10,6 +10,13 @@ fn mult(x,y) {
 fn main() {
     let a = 1;
     let b = 2;
+    if a<b {
+        b = 4;
+        0
+    } else {
+        b = 3;
+        0
+    };
     let c = mult(a, b);
     print(c)
 }
