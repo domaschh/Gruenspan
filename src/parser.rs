@@ -637,7 +637,7 @@ pub fn ast_evaluator(
             while let Value::Bool(true) = ast_evaluator(cond, funcs, stack)? {
                 ast_evaluator(body, funcs, stack)?;
             }
-            Value::Null
+            stack.last().unwrap().1.clone()
         }
     })
 }

@@ -17,12 +17,13 @@ fn main() {
         b = 3;
         0
     };
-    let i =0;
-    loop i<10 {
+    let i = 0;
+    let x = (loop i<10 {
         print(i);
         i=i+1;
-        0
-    };
+        i
+    });
+    print(x+100);
     let c = mult(a, b);
     print(c)
 }

@@ -199,6 +199,10 @@ impl Runtime {
                 }
                 ByteCodeOp::End => break,
                 ByteCodeOp::Jump(label) => self.pc = *self.label_offsets.get(label).unwrap(),
+                ByteCodeOp::Pop => {
+                    self.value_stack.pop();
+                    self.pc += 1;
+                }
             }
         }
         Ok(0)

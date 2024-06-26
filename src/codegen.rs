@@ -75,6 +75,7 @@ pub enum ByteCodeOp {
     JumpTrue(String),
     JumpFalse(String),
     Label(String),
+    Pop,
     End,
 }
 
@@ -299,10 +300,14 @@ fn generate_function_bytecode(
         }
         Expr::Loop(cond, body) => {
             let increased_labelctr = label_ctr + 1;
+            operations.push(RelativeOperation::new(ByteCodeOp::Const(
+                ByteCodeValue::Number(0.0),
+            )));
             operations.push(RelativeOperation::new(ByteCodeOp::Label(format!(
                 "{}_{}_{}",
                 method_name, "loopstart", label_ctr
             ))));
+
             generate_function_bytecode(
                 &(**cond).0,
                 store_ct,
@@ -315,10 +320,8 @@ fn generate_function_bytecode(
                 "{}_{}_{}",
                 method_name, "loopend", label_ctr
             ))));
-            operations.push(RelativeOperation::new(ByteCodeOp::Label(format!(
-                "{}_{}_{}",
-                method_name, "loopbody", label_ctr
-            ))));
+            operations.push(RelativeOperation::new(ByteCodeOp::Pop));
+
             generate_function_bytecode(
                 &(**body).0,
                 store_ct,
@@ -327,9 +330,11 @@ fn generate_function_bytecode(
                 mem_store,
                 operations,
             );
-            operations.push(RelativeOperation::new(ByteCodeOp::Label(format!(
+            //This is giga cursed because loop can theoretically return soemthing?
+            // operations.push(RelativeOperation::new(ByteCodeOp::Pop));
+            operations.push(RelativeOperation::new(ByteCodeOp::Jump(format!(
                 "{}_{}_{}",
-                method_name, "le", label_ctr
+                method_name, "loopstart", label_ctr
             ))));
             operations.push(RelativeOperation::new(ByteCodeOp::Label(format!(
                 "{}_{}_{}",
